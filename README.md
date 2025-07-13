@@ -26,4 +26,6 @@
 ---
 
 ## 👨‍💻 Contributor
-deepaksinghh12 
+
+- [deepaksinghh12](https://github.com/deepaksinghh12)
+
