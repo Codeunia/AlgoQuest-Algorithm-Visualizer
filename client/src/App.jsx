@@ -1,83 +1,123 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import ProblemList from './components/ProblemList'; // Import the new ProblemList component
 
-// Main App component that will contain our authentication forms
+// Main App component that will contain our authentication forms or the problem list
 function App() {
   // State to toggle between 'login' and 'register' views
   const [isRegisterView, setIsRegisterView] = useState(true);
+  // NEW STATE: To track if a user is authenticated (logged in)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // useEffect to check authentication status when the component mounts
+  // and whenever localStorage might change (though we'll explicitly update it on login/logout)
+  useEffect(() => {
+    // Check if a token exists in localStorage
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsAuthenticated(true); // If token exists, user is considered authenticated
+    } else {
+      setIsAuthenticated(false); // No token, not authenticated
+    }
+  }, []); // Empty dependency array means this runs once on component mount
+
+  // Function to handle successful login (passed down to LoginForm)
+  const handleLoginSuccess = (token, user) => {
+    localStorage.setItem('token', token); // Store token
+    localStorage.setItem('user', JSON.stringify(user)); // Store user info
+    setIsAuthenticated(true); // Update authentication state
+    // No need to redirect here, App component will re-render and show ProblemList
+  };
+
+  // Function to handle logout
+  const handleLogout = () => {
+    localStorage.removeItem('token'); // Remove token
+    localStorage.removeItem('user');  // Remove user info
+    setIsAuthenticated(false); // Update authentication state
+    setIsRegisterView(false); // Optionally, switch back to login view after logout
+  };
+
 
   return (
-    // Main container for the authentication section
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 sm:p-6">
-      <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full max-w-md border border-gray-200">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          {isRegisterView ? 'Register for AlgoQuest' : 'Login to AlgoQuest'}
-        </h2>
-
-        {/* Toggle buttons for switching between forms */}
-        <div className="flex justify-center mb-6 space-x-4">
-          <button
-            onClick={() => setIsRegisterView(true)}
-            className={`px-6 py-2 rounded-full text-lg font-semibold transition-all duration-300
-              ${isRegisterView ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-          >
-            Register
-          </button>
-          <button
-            onClick={() => setIsRegisterView(false)}
-            className={`px-6 py-2 rounded-full text-lg font-semibold transition-all duration-300
-              ${!isRegisterView ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-          >
-            Login
-          </button>
+    // Main container for the application
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4 sm:p-6">
+      {/* Conditional rendering based on authentication status */}
+      {isAuthenticated ? (
+        // If authenticated, show a welcome message and the ProblemList
+        <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full max-w-4xl border border-gray-200">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-bold text-gray-800">Welcome to AlgoQuest!</h2>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-300"
+            >
+              Logout
+            </button>
+          </div>
+          <ProblemList /> {/* Render the ProblemList component */}
         </div>
+      ) : (
+        // If not authenticated, show the authentication forms
+        <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full max-w-md border border-gray-200">
+          <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
+            {isRegisterView ? 'Register for AlgoQuest' : 'Login to AlgoQuest'}
+          </h2>
 
-        {/* Render the appropriate form based on the state */}
-        {isRegisterView ? <RegisterForm /> : <LoginForm />}
-      </div>
+          <div className="flex justify-center mb-6 space-x-4">
+            <button
+              onClick={() => setIsRegisterView(true)}
+              className={`px-6 py-2 rounded-full text-lg font-semibold transition-all duration-300
+                ${isRegisterView ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            >
+              Register
+            </button>
+            <button
+              onClick={() => setIsRegisterView(false)}
+              className={`px-6 py-2 rounded-full text-lg font-semibold transition-all duration-300
+                ${!isRegisterView ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            >
+              Login
+            </button>
+          </div>
+
+          {/* Pass handleLoginSuccess to LoginForm so it can update isAuthenticated state */}
+          {isRegisterView ? <RegisterForm /> : <LoginForm onLoginSuccess={handleLoginSuccess} />}
+        </div>
+      )}
     </div>
   );
 }
 
-// RegisterForm Component
+// RegisterForm Component (No changes needed here for now, but keeping it for context)
 function RegisterForm() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [message, setMessage] = useState(''); // For success messages
-  const [error, setError] = useState('');     // For error messages
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
-  // Function to handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default browser form submission
-    setMessage('');     // Clear previous messages
-    setError('');       // Clear previous errors
+    e.preventDefault();
+    setMessage('');
+    setError('');
 
     try {
-      // Make a POST request to your backend's register endpoint
       const response = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json', // Tell the server we're sending JSON
-        },
-        // Convert our form data into a JSON string
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password }),
       });
 
-      const data = await response.json(); // Parse the JSON response from the server
+      const data = await response.json();
 
-      if (response.ok) { // Check if the response status is 2xx (success)
-        setMessage(data.message); // Display success message
-        // Optionally, clear the form fields
+      if (response.ok) {
+        setMessage(data.message);
         setUsername('');
         setEmail('');
         setPassword('');
-        // For a real app, you might automatically log in or redirect after successful registration
       } else {
-        // If response is not ok (e.g., 400, 500), display the error message from the server
         setError(data.message || 'Registration failed');
       }
     } catch (err) {
-      // Catch any network errors (e.g., server not running)
       console.error('Network error during registration:', err);
       setError('Could not connect to the server. Please try again later.');
     }
@@ -85,7 +125,6 @@ function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Display messages */}
       {message && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">{message}</div>}
       {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">{error}</div>}
 
@@ -132,48 +171,38 @@ function RegisterForm() {
   );
 }
 
-// LoginForm Component
-function LoginForm() {
+// LoginForm Component (Modified to accept onLoginSuccess prop)
+function LoginForm({ onLoginSuccess }) { // Accept onLoginSuccess as a prop
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [message, setMessage] = useState(''); // For success messages
-  const [error, setError] = useState('');     // For error messages
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
-  // Function to handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default browser form submission
-    setMessage('');     // Clear previous messages
-    setError('');       // Clear previous errors
+    e.preventDefault();
+    setMessage('');
+    setError('');
 
     try {
-      // Make a POST request to your backend's login endpoint
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json', // Tell the server we're sending JSON
-        },
-        // Convert our form data into a JSON string
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json(); // Parse the JSON response from the server
+      const data = await response.json();
 
-      if (response.ok) { // Check if the response status is 2xx (success)
-        setMessage(data.message); // Display success message
+      if (response.ok) {
+        setMessage(data.message);
         console.log('Login successful! Token:', data.token);
-        // 🔑 Store the JWT token in localStorage for future authenticated requests
-        localStorage.setItem('token', data.token);
-        // Optionally, store user info too
-        localStorage.setItem('user', JSON.stringify(data.user));
-
-        // For a real app, you would typically redirect the user to a dashboard or protected page
-        // window.location.href = '/dashboard'; // Example redirection
+        // Call the passed-in onLoginSuccess function
+        if (onLoginSuccess) {
+          onLoginSuccess(data.token, data.user);
+        }
       } else {
-        // If response is not ok, display the error message from the server
         setError(data.message || 'Login failed');
       }
     } catch (err) {
-      // Catch any network errors
       console.error('Network error during login:', err);
       setError('Could not connect to the server. Please try again later.');
     }
@@ -181,7 +210,6 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Display messages */}
       {message && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">{message}</div>}
       {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">{error}</div>}
 
