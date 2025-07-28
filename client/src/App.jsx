@@ -1,62 +1,97 @@
 import React, { useState, useEffect } from 'react';
-import ProblemList from './components/ProblemList'; // Import the new ProblemList component
+import ProblemList from './components/ProblemList';
+import AdminPanel from './components/AdminPanel';
+import ProblemDetailPage from './components/ProblemDetailPage'; // NEW: Import ProblemDetailPage
 
-// Main App component that will contain our authentication forms or the problem list
 function App() {
-  // State to toggle between 'login' and 'register' views
   const [isRegisterView, setIsRegisterView] = useState(true);
-  // NEW STATE: To track if a user is authenticated (logged in)
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null);
+  // NEW STATE: To store the ID of the currently selected problem for detail view
+  const [selectedProblemId, setSelectedProblemId] = useState(null);
 
-  // useEffect to check authentication status when the component mounts
-  // and whenever localStorage might change (though we'll explicitly update it on login/logout)
   useEffect(() => {
-    // Check if a token exists in localStorage
     const token = localStorage.getItem('token');
-    if (token) {
-      setIsAuthenticated(true); // If token exists, user is considered authenticated
+    const userString = localStorage.getItem('user');
+
+    if (token && userString) {
+      try {
+        const user = JSON.parse(userString);
+        setIsAuthenticated(true);
+        setUserRole(user.role);
+      } catch (e) {
+        console.error("Error parsing user data from localStorage:", e);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setIsAuthenticated(false);
+        setUserRole(null);
+      }
     } else {
-      setIsAuthenticated(false); // No token, not authenticated
+      setIsAuthenticated(false);
+      setUserRole(null);
     }
-  }, []); // Empty dependency array means this runs once on component mount
+  }, []);
 
-  // Function to handle successful login (passed down to LoginForm)
   const handleLoginSuccess = (token, user) => {
-    localStorage.setItem('token', token); // Store token
-    localStorage.setItem('user', JSON.stringify(user)); // Store user info
-    setIsAuthenticated(true); // Update authentication state
-    // No need to redirect here, App component will re-render and show ProblemList
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    setIsAuthenticated(true);
+    setUserRole(user.role);
   };
 
-  // Function to handle logout
   const handleLogout = () => {
-    localStorage.removeItem('token'); // Remove token
-    localStorage.removeItem('user');  // Remove user info
-    setIsAuthenticated(false); // Update authentication state
-    setIsRegisterView(false); // Optionally, switch back to login view after logout
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    setUserRole(null);
+    setIsRegisterView(false);
+    setSelectedProblemId(null); // NEW: Clear selected problem on logout
   };
 
+  // NEW: Function to handle when a problem is selected from the list
+  const handleSelectProblem = (problemId) => {
+    setSelectedProblemId(problemId);
+  };
+
+  // NEW: Function to go back to the problem list from the detail page
+  const handleBackToProblemList = () => {
+    setSelectedProblemId(null);
+  };
 
   return (
-    // Main container for the application
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4 sm:p-6">
-      {/* Conditional rendering based on authentication status */}
       {isAuthenticated ? (
-        // If authenticated, show a welcome message and the ProblemList
         <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full max-w-4xl border border-gray-200">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800">Welcome to AlgoQuest!</h2>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-300"
-            >
-              Logout
-            </button>
+            <div className="flex space-x-4">
+              {userRole === 'admin' && (
+                <button
+                  onClick={() => { /* Implement navigation to Admin Panel if not already there */ }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
+                >
+                  Admin Panel
+                </button>
+              )}
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-300"
+              >
+                Logout
+              </button>
+            </div>
           </div>
-          <ProblemList /> {/* Render the ProblemList component */}
+
+          {/* NEW: Conditional rendering based on selectedProblemId */}
+          {selectedProblemId ? (
+            // If a problem is selected, show ProblemDetailPage
+            <ProblemDetailPage problemId={selectedProblemId} onBackToList={handleBackToProblemList} />
+          ) : (
+            // If no problem is selected, show either AdminPanel or ProblemList
+            userRole === 'admin' ? <AdminPanel /> : <ProblemList onSelectProblem={handleSelectProblem} /> // Pass onSelectProblem to ProblemList
+          )}
         </div>
       ) : (
-        // If not authenticated, show the authentication forms
         <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full max-w-md border border-gray-200">
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
             {isRegisterView ? 'Register for AlgoQuest' : 'Login to AlgoQuest'}
@@ -79,15 +114,15 @@ function App() {
             </button>
           </div>
 
-          {/* Pass handleLoginSuccess to LoginForm so it can update isAuthenticated state */}
-          {isRegisterView ? <RegisterForm /> : <LoginForm onLoginSuccess={handleLoginSuccess} />}
+          <RegisterForm />
+          <LoginForm onLoginSuccess={handleLoginSuccess} />
         </div>
       )}
     </div>
   );
 }
 
-// RegisterForm Component (No changes needed here for now, but keeping it for context)
+// RegisterForm Component (No changes)
 function RegisterForm() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -171,8 +206,8 @@ function RegisterForm() {
   );
 }
 
-// LoginForm Component (Modified to accept onLoginSuccess prop)
-function LoginForm({ onLoginSuccess }) { // Accept onLoginSuccess as a prop
+// LoginForm Component (No changes)
+function LoginForm({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -195,7 +230,6 @@ function LoginForm({ onLoginSuccess }) { // Accept onLoginSuccess as a prop
       if (response.ok) {
         setMessage(data.message);
         console.log('Login successful! Token:', data.token);
-        // Call the passed-in onLoginSuccess function
         if (onLoginSuccess) {
           onLoginSuccess(data.token, data.user);
         }
