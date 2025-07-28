@@ -52,10 +52,18 @@ function AdminPanel() {
     setMessage(null);
     setError(null);
 
+    let testCasesParsed;
+    try {
+      testCasesParsed = JSON.parse(problemForm.testCases);
+    } catch {
+      setError("Invalid JSON in test cases.");
+      return;
+    }
+
     const payload = {
       ...problemForm,
       tags: problemForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
-      testCases: JSON.parse(problemForm.testCases)
+      testCases: testCasesParsed
     };
 
     const method = problemForm._id ? 'PUT' : 'POST';
@@ -147,10 +155,6 @@ function AdminPanel() {
     return <div className="text-center py-8">Loading admin problems...</div>;
   }
 
-  if (error) {
-    return <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center">{error}</div>;
-  }
-
   return (
     <div className="space-y-8">
       <h3 className="text-2xl font-bold text-gray-800 text-center">Admin Panel: Manage Problems</h3>
@@ -219,7 +223,19 @@ function AdminPanel() {
           {problemForm._id && (
             <button
               type="button"
-              onClick={() => setProblemForm({ _id: null, title: '', description: '', difficulty: 'Easy', category: '', tags: '', starterCode: '// Write your code here', solution: '', testCases: '[{"input":"1","expectedOutput":"1"}]' })}
+              onClick={() =>
+                setProblemForm({
+                  _id: null,
+                  title: '',
+                  description: '',
+                  difficulty: 'Easy',
+                  category: '',
+                  tags: '',
+                  starterCode: '// Write your code here',
+                  solution: '',
+                  testCases: '[{"input":"1","expectedOutput":"1"}]'
+                })
+              }
               className="w-full mt-2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105"
             >
               Clear Form
@@ -264,3 +280,4 @@ function AdminPanel() {
 }
 
 export default AdminPanel;
+import React, { useState, useEffect } from 'react';
