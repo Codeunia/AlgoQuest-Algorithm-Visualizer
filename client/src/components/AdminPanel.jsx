@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 
 function AdminPanel() {
   const [problemForm, setProblemForm] = useState({
@@ -212,7 +214,7 @@ function AdminPanel() {
             <textarea id="testCases" name="testCases" value={problemForm.testCases} onChange={handleChange} required rows="6"
               className="font-mono shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-indigo-500"
               placeholder='[{"input":"[1,2]","expectedOutput":"3"},{"input":"[3,4]","expectedOutput":"7"}]'></textarea>
-            <p className="text-xs text-gray-500 mt-1">Example: `[{"input":"[2,7],9","expectedOutput":"[0,1]"}]`</p>
+            <p className="text-xs text-gray-500 mt-1">Example: <code>[{'{'}"input":"[2,7],9","expectedOutput":"[0,1]"{'}'}]</code></p>
           </div>
           <button
             type="submit"
@@ -281,3 +283,5 @@ function AdminPanel() {
 
 export default AdminPanel;
 import React, { useState, useEffect } from 'react';
+// ...existing code...
+import { useNavigate } from 'react-router-dom';
