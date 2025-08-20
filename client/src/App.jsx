@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import ProblemList from './components/ProblemList';
 import AdminPanel from './components/AdminPanel';
-import ProblemDetailPage from './components/ProblemDetailPage'; // NEW: Import ProblemDetailPage
+import ProblemDetailPage from './components/ProblemDetailPage';
+import Dashboard from './components/Dashboard';
 
 function App() {
   const [isRegisterView, setIsRegisterView] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(null);
-  // NEW STATE: To store the ID of the currently selected problem for detail view
   const [selectedProblemId, setSelectedProblemId] = useState(null);
+  const [isAdminPanel, setIsAdminPanel] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -45,52 +46,35 @@ function App() {
     setIsAuthenticated(false);
     setUserRole(null);
     setIsRegisterView(false);
-    setSelectedProblemId(null); // NEW: Clear selected problem on logout
+    setSelectedProblemId(null);
+    setIsAdminPanel(false);
   };
 
-  // NEW: Function to handle when a problem is selected from the list
   const handleSelectProblem = (problemId) => {
     setSelectedProblemId(problemId);
   };
 
-  // NEW: Function to go back to the problem list from the detail page
   const handleBackToProblemList = () => {
+    setSelectedProblemId(null);
+    setIsAdminPanel(false);
+  };
+  
+  const handleAdminPanelToggle = () => {
+    setIsAdminPanel(prevState => !prevState);
     setSelectedProblemId(null);
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4 sm:p-6">
       {isAuthenticated ? (
-        <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full max-w-4xl border border-gray-200">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-800">Welcome to AlgoQuest!</h2>
-            <div className="flex space-x-4">
-              {userRole === 'admin' && (
-                <button
-                  onClick={() => { /* Implement navigation to Admin Panel if not already there */ }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
-                >
-                  Admin Panel
-                </button>
-              )}
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-300"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-
-          {/* NEW: Conditional rendering based on selectedProblemId */}
-          {selectedProblemId ? (
-            // If a problem is selected, show ProblemDetailPage
-            <ProblemDetailPage problemId={selectedProblemId} onBackToList={handleBackToProblemList} />
-          ) : (
-            // If no problem is selected, show either AdminPanel or ProblemList
-            userRole === 'admin' ? <AdminPanel /> : <ProblemList onSelectProblem={handleSelectProblem} /> // Pass onSelectProblem to ProblemList
-          )}
-        </div>
+        <Dashboard
+          userRole={userRole}
+          selectedProblemId={selectedProblemId}
+          onSelectProblem={handleSelectProblem}
+          onBackToList={handleBackToProblemList}
+          onAdminPanelToggle={handleAdminPanelToggle}
+          isAdminPanel={isAdminPanel}
+        />
       ) : (
         <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full max-w-md border border-gray-200">
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
@@ -114,15 +98,13 @@ function App() {
             </button>
           </div>
 
-          <RegisterForm />
-          <LoginForm onLoginSuccess={handleLoginSuccess} />
+          {isRegisterView ? <RegisterForm /> : <LoginForm onLoginSuccess={handleLoginSuccess} />}
         </div>
       )}
     </div>
   );
 }
 
-// RegisterForm Component (No changes)
 function RegisterForm() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -206,7 +188,6 @@ function RegisterForm() {
   );
 }
 
-// LoginForm Component (No changes)
 function LoginForm({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

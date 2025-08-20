@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-
 
 function AdminPanel() {
   const [problemForm, setProblemForm] = useState({
@@ -54,18 +52,10 @@ function AdminPanel() {
     setMessage(null);
     setError(null);
 
-    let testCasesParsed;
-    try {
-      testCasesParsed = JSON.parse(problemForm.testCases);
-    } catch {
-      setError("Invalid JSON in test cases.");
-      return;
-    }
-
     const payload = {
       ...problemForm,
       tags: problemForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
-      testCases: testCasesParsed
+      testCases: JSON.parse(problemForm.testCases)
     };
 
     const method = problemForm._id ? 'PUT' : 'POST';
@@ -157,6 +147,11 @@ function AdminPanel() {
     return <div className="text-center py-8">Loading admin problems...</div>;
   }
 
+  if (error) {
+    return <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center">{error}</div>;
+  }
+  
+  // Refactored to use simple strings for className to avoid parsing issues
   return (
     <div className="space-y-8">
       <h3 className="text-2xl font-bold text-gray-800 text-center">Admin Panel: Manage Problems</h3>
@@ -214,7 +209,7 @@ function AdminPanel() {
             <textarea id="testCases" name="testCases" value={problemForm.testCases} onChange={handleChange} required rows="6"
               className="font-mono shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-indigo-500"
               placeholder='[{"input":"[1,2]","expectedOutput":"3"},{"input":"[3,4]","expectedOutput":"7"}]'></textarea>
-            <p className="text-xs text-gray-500 mt-1">Example: <code>[{'{'}"input":"[2,7],9","expectedOutput":"[0,1]"{'}'}]</code></p>
+            <p className="text-xs text-gray-500 mt-1">Example: {'[{"input":"[2,7],9","expectedOutput":"[0,1]"}]'}</p>
           </div>
           <button
             type="submit"
@@ -225,19 +220,7 @@ function AdminPanel() {
           {problemForm._id && (
             <button
               type="button"
-              onClick={() =>
-                setProblemForm({
-                  _id: null,
-                  title: '',
-                  description: '',
-                  difficulty: 'Easy',
-                  category: '',
-                  tags: '',
-                  starterCode: '// Write your code here',
-                  solution: '',
-                  testCases: '[{"input":"1","expectedOutput":"1"}]'
-                })
-              }
+              onClick={() => setProblemForm({ _id: null, title: '', description: '', difficulty: 'Easy', category: '', tags: '', starterCode: '// Write your code here', solution: '', testCases: '[{"input":"1","expectedOutput":"1"}]' })}
               className="w-full mt-2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105"
             >
               Clear Form
@@ -282,6 +265,3 @@ function AdminPanel() {
 }
 
 export default AdminPanel;
-import React, { useState, useEffect } from 'react';
-// ...existing code...
-import { useNavigate } from 'react-router-dom';
